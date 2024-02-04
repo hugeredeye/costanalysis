@@ -1,0 +1,89 @@
+import random
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# Создаем класс Expense, который будет представлять отдельную запись о расходе
+class Expense:
+    def __init__(self, category, amount, date):
+        self.category = category
+        self.amount = amount
+        self.date = date
+
+    def __str__(self):
+        return f"Category: {self.category}, Amount: {self.amount:.2f}, Date: {self.date}"
+
+# Создаем класс ExpensesTracker, который будет отвечать за управление списком расходов
+class ExpensesTracker:
+    def __init__(self):
+        self.expenses = []
+
+    # Метод для добавления нового расхода в список
+    def add_expense(self, expense):
+        self.expenses.append(expense)
+
+    # Метод для вывода на экран всех расходов
+    def display_expenses(self):
+        for expense in self.expenses:
+            print(expense)
+
+    # Метод для кластеризации расходов
+    def cluster_expenses(self):
+        # Преобразуем список расходов в матрицу признаков
+        X = np.array([[expense.category, expense.amount, expense.date] for expense in self.expenses])
+
+        # Нормализуем данные
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+
+        # Применяем PCA для уменьшения размерности данных
+        pca = PCA(n_components=2)
+        X_pca = pca.fit_transform(X_scaled)
+
+        # Инициализируем кластерер KMeans
+        kmeans = KMeans(n_clusters=3, random_state=0).fit(X_pca)
+
+        # Получаем метки кластеров для каждого расхода
+        labels = kmeans.predict(X_pca)
+
+        # Вычисляем показатель Силуэт для оценки качества кластеризации
+        silhouette_avg = silhouette_score(X_pca, labels)
+
+        # Выводим результаты кластеризации
+        for label, expense in zip(labels, self.expenses):
+            print(f"Cluster: {label}, Expense: {expense}")
+
+        # Выводим показатель Силуэт
+        print(f"Silhouette score: {silhouette_avg:.2f}")
+
+# Создаем экземпляр класса ExpensesTracker
+tracker = ExpensesTracker()
+
+# Создаем несколько объектов класса Expense
+expense1 = Expense("Food", 20.5, "2022-01-01")
+expense2 = Expense("Transportation", 10, "2022-01-02")
+expense3 = Expense("Shopping", 50.75, "2022-01-03")
+
+# Добавляем расходы в трекер
+tracker.add_expense(expense1)
+tracker.add_expense(expense2)
+tracker.add_expense(expense3)
+
+# Выводим все расходы на экран
+tracker.display_expenses()
+
+# Добавляем случайные расходы
+for i in range(10):
+    category = random.choice(["Food", "Transportation", "Shopping"])
+    amount = random.randint(1, 100)
+    date = "2022-01-{:02d}".format(random.randint(1, 31))
+    expense = Expense(category, amount, date)
+    tracker.add_expense(expense)
+
+# Выводим все расходы на экран
+tracker.display_expenses()
+
+# Кластеризуем расходы
+tracker.cluster_expenses()
